@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Camera, Grid, List, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Camera, Grid, List, X, ChevronLeft, ChevronRight, ArrowLeft, Lock } from 'lucide-react';
 import PrivateAuth from './PrivateAuth';
-import { photosApi } from '../../lib/api';
+import { photosApi, privateAuthApi } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 interface Photo {
@@ -47,6 +48,23 @@ export default function PhotosGallery() {
     if (authenticated) fetchData();
   }, [authenticated, fetchData]);
 
+  const navigate = useNavigate();
+
+  // Auto-lock when leaving this section
+  useEffect(() => {
+    return () => {
+      privateAuthApi.lock('photos').catch(() => {});
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      navigator.sendBeacon?.('/api/private-auth/lock/photos');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
   useEffect(() => {
     if (lightboxIdx === null) return;
     const handler = (e: KeyboardEvent) => {
@@ -58,11 +76,16 @@ export default function PhotosGallery() {
     return () => document.removeEventListener('keydown', handler);
   }, [lightboxIdx, photos.length]);
 
+  const handleLockAndExit = async () => {
+    await privateAuthApi.lock('photos').catch(() => {});
+    navigate('/notes');
+  };
+
   if (!authenticated) {
     return (
       <PrivateAuth
         sectionId="photos"
-        sectionName="Photos & Memories"
+        sectionName="Photos"
         gradientClass="from-rose-500 to-pink-600"
         onAuthenticated={() => setAuthenticated(true)}
       />
@@ -74,15 +97,30 @@ export default function PhotosGallery() {
       {/* Header */}
       <div className="bg-gradient-to-r from-rose-500 to-pink-600 text-white py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="mb-4">
+            <Link
+              to="/notes"
+              className="inline-flex items-center gap-1.5 text-rose-100 hover:text-white text-sm font-medium transition-colors"
+            >
+              <ArrowLeft size={16} /> Back to Notes
+            </Link>
+          </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Camera size={28} className="text-rose-200" />
               <div>
-                <h1 className="text-2xl font-bold">Photos & Memories</h1>
-                <p className="text-rose-200 text-sm">{photos.length} photos in collection</p>
+                <h1 className="text-2xl font-bold">Photos</h1>
+                <p className="text-rose-200 text-sm">{photos.length} photos in archive</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={handleLockAndExit}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg text-sm text-white transition-colors"
+                title="Lock and return to Notes"
+              >
+                <Lock size={14} /> Lock &amp; Exit
+              </button>
               <button onClick={() => setView(view === 'grid' ? 'list' : 'grid')} className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors">
                 {view === 'grid' ? <List size={18} /> : <Grid size={18} />}
               </button>

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, Calendar } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, ArrowRight, Calendar, ArrowLeft, Lock } from 'lucide-react';
 import PrivateAuth from './PrivateAuth';
-import { lettersApi } from '../../lib/api';
+import { lettersApi, privateAuthApi } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 interface Letter {
@@ -15,16 +15,39 @@ interface Letter {
 }
 
 export default function Letters() {
+  const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Auto-lock when leaving this section
+  useEffect(() => {
+    return () => {
+      if (!window.location.pathname.startsWith('/notes/letters')) {
+        privateAuthApi.lock('letters').catch(() => {});
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      navigator.sendBeacon?.('/api/private-auth/lock/letters');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
+  const handleLockAndExit = async () => {
+    await privateAuthApi.lock('letters').catch(() => {});
+    navigate('/notes');
+  };
 
   const fetchLetters = useCallback(async () => {
     try {
       const res = await lettersApi.getAll();
       setLetters(res.data);
     } catch {
-      toast.error('Failed to load letters.');
+      toast.error('Failed to load messages.');
     } finally {
       setLoading(false);
     }
@@ -38,7 +61,7 @@ export default function Letters() {
     return (
       <PrivateAuth
         sectionId="letters"
-        sectionName="Letters to Her"
+        sectionName="Messages"
         gradientClass="from-violet-500 to-purple-600"
         onAuthenticated={() => setAuthenticated(true)}
       />
@@ -49,12 +72,29 @@ export default function Letters() {
     <div className="animate-fade-in min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-violet-600 to-purple-700 text-white py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Mail size={28} className="text-violet-300" />
-            <div>
-              <h1 className="text-2xl font-bold">Letters to Her</h1>
-              <p className="text-violet-200 text-sm">{letters.length} letters written with love</p>
+          <div className="mb-4">
+            <Link
+              to="/notes"
+              className="inline-flex items-center gap-1.5 text-violet-200 hover:text-white text-sm font-medium transition-colors"
+            >
+              <ArrowLeft size={16} /> Back to Notes
+            </Link>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Mail size={28} className="text-violet-300" />
+              <div>
+                <h1 className="text-2xl font-bold">Messages</h1>
+                <p className="text-violet-200 text-sm">{letters.length} messages in archive</p>
+              </div>
             </div>
+            <button
+              onClick={handleLockAndExit}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg text-sm text-white transition-colors"
+              title="Lock and return to Notes"
+            >
+              <Lock size={14} /> Lock &amp; Exit
+            </button>
           </div>
         </div>
       </div>
@@ -67,8 +107,8 @@ export default function Letters() {
         ) : letters.length === 0 ? (
           <div className="text-center py-24 text-gray-400">
             <Mail size={56} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium text-gray-500">No letters yet</p>
-            <p className="text-sm mt-2">Letters will appear here once they are written and published.</p>
+            <p className="text-lg font-medium text-gray-500">No messages yet</p>
+            <p className="text-sm mt-2">Messages will appear here once published.</p>
           </div>
         ) : (
           <div className="space-y-5">

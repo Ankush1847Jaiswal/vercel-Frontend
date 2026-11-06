@@ -35,11 +35,28 @@ export default function LetterDetail() {
     }).finally(() => setLoading(false));
   }, [authenticated, id, navigate]);
 
+  // Auto-lock when leaving this section
+  useEffect(() => {
+    return () => {
+      if (!window.location.pathname.startsWith('/notes/letters')) {
+        privateAuthApi.lock('letters').catch(() => {});
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      navigator.sendBeacon?.('/api/private-auth/lock/letters');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
   if (!authenticated) {
     return (
       <PrivateAuth
         sectionId="letters"
-        sectionName="Letters to Her"
+        sectionName="Messages"
         gradientClass="from-violet-500 to-purple-600"
         onAuthenticated={() => setAuthenticated(true)}
       />
@@ -66,7 +83,7 @@ export default function LetterDetail() {
     <div className="animate-fade-in min-h-screen bg-cream">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <Link to="/notes/letters" className="flex items-center gap-2 text-violet-600 hover:text-violet-800 text-sm font-medium mb-8 transition-colors">
-          <ArrowLeft size={16} /> Back to Letters
+          <ArrowLeft size={16} /> Back to Messages
         </Link>
 
         <article className="bg-white rounded-2xl shadow-card p-8 md:p-12">
@@ -86,11 +103,6 @@ export default function LetterDetail() {
 
           {/* Letter content */}
           <div className="prose-content whitespace-pre-wrap text-gray-700 leading-relaxed font-serif text-lg">{letter.content}</div>
-
-          {/* Letter footer */}
-          <div className="mt-10 pt-6 border-t border-gray-100 text-right text-gray-400 text-sm italic font-serif">
-            Written with love 💜
-          </div>
         </article>
       </div>
     </div>

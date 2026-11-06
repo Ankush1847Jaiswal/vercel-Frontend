@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Camera, Mail, BookOpen, Heart, Settings,
   LogOut, GraduationCap, Upload, Plus, Trash2,
   Edit2, Eye, EyeOff, ChevronRight, Calendar,
-  Save
+  Save, FileText
 } from 'lucide-react';
 import { authApi, adminApi, photosApi, lettersApi, diaryApi, momentsApi } from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -428,7 +428,9 @@ function MomentsAdmin() {
       <div className="space-y-3">
         {moments.map(m => (
           <div key={m.id} className="card p-4 flex items-center gap-4">
-            <div className="text-2xl">{m.type === 'anniversary' ? '💕' : m.type === 'birthday' ? '🎂' : '✨'}</div>
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+              <FileText size={18} />
+            </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-navy">{m.title}</div>
               <div className="text-gray-400 text-xs">{m.date} • {m.type}</div>

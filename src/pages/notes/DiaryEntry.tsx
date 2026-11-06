@@ -13,16 +13,29 @@ interface DiaryEntry {
   mood: string;
 }
 
-const moodEmoji: Record<string, string> = {
-  happy: '😊', sad: '😢', excited: '🎉', calm: '😌', grateful: '🙏', loving: '💕', nostalgic: '🌅',
-};
-
 export default function DiaryEntry() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Auto-lock when leaving this section
+  useEffect(() => {
+    return () => {
+      if (!window.location.pathname.startsWith('/notes/diary')) {
+        privateAuthApi.lock('diary').catch(() => {});
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      navigator.sendBeacon?.('/api/private-auth/lock/diary');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
 
   useEffect(() => {
     privateAuthApi.status('diary').then(res => {
@@ -43,7 +56,7 @@ export default function DiaryEntry() {
     return (
       <PrivateAuth
         sectionId="diary"
-        sectionName="Personal Diary"
+        sectionName="Articles"
         gradientClass="from-teal-500 to-emerald-600"
         onAuthenticated={() => setAuthenticated(true)}
       />
@@ -67,12 +80,14 @@ export default function DiaryEntry() {
     <div className="animate-fade-in min-h-screen bg-cream">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <Link to="/notes/diary" className="flex items-center gap-2 text-teal-600 hover:text-teal-800 text-sm font-medium mb-8 transition-colors">
-          <ArrowLeft size={16} /> Back to Diary
+          <ArrowLeft size={16} /> Back to Articles
         </Link>
         <article className="bg-white rounded-2xl shadow-card p-8 md:p-12">
           <div className="border-b border-gray-100 pb-6 mb-8">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl">{moodEmoji[entry.mood] || '📔'}</span>
+              <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                <BookOpen size={20} />
+              </div>
               {entry.mood && <span className="tag bg-teal-50 text-teal-700 capitalize">{entry.mood}</span>}
             </div>
             <h1 className="text-3xl font-bold text-navy font-serif mb-3">{entry.title}</h1>
@@ -84,7 +99,7 @@ export default function DiaryEntry() {
           <div className="prose-content whitespace-pre-wrap text-gray-700 leading-relaxed text-lg">{entry.content}</div>
           <div className="mt-10 pt-6 border-t border-gray-100 text-gray-400 text-sm italic text-right">
             <BookOpen size={14} className="inline mr-1.5" />
-            Personal diary entry
+            Archived article
           </div>
         </article>
       </div>

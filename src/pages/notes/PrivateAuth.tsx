@@ -83,7 +83,7 @@ export default function PrivateAuth({ sectionId, sectionName, gradientClass = 'f
           totalQuestions: res.data.totalQuestions,
         });
         setAnswer('');
-        toast.success(`✓ Correct! Question ${res.data.questionNumber - 1} of ${res.data.totalQuestions} answered.`);
+        toast.success(`Correct! Question ${res.data.questionNumber - 1} of ${res.data.totalQuestions} answered.`);
       }
     } catch (err: any) {
       const message = err.response?.data?.error || 'Incorrect answer. Please try again.';
@@ -145,7 +145,7 @@ export default function PrivateAuth({ sectionId, sectionName, gradientClass = 'f
               ))}
             </div>
             <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-              You will be presented with <strong>5 personal questions</strong> in random order. All must be answered correctly to unlock this section.
+              You will be presented with <strong>5 verification challenges</strong> in random order. All must be answered correctly to unlock this section.
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700 mb-6">
               <Shield size={14} className="inline mr-1.5" />
